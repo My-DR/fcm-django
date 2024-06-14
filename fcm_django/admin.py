@@ -1,5 +1,3 @@
-from typing import List, Tuple, Union
-
 from django.apps import apps
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
@@ -44,20 +42,16 @@ class DeviceAdmin(admin.ModelAdmin):
 
     def get_search_fields(self, request):
         if hasattr(User, "USERNAME_FIELD"):
-            return "name", "device_id", f"user__{User.USERNAME_FIELD}"
+            return "name", "device_id", "user__{}".format(User.USERNAME_FIELD)
         else:
             return "name", "device_id"
 
     def _send_deactivated_message(
         self,
         request,
-        response: Union[
-            FirebaseResponseDict,
-            List[FirebaseResponseDict],
-            List[Tuple[SendResponse, str]],
-        ],
-        total_failure: int,
-        is_topic: bool,
+        response,
+        total_failure,
+        is_topic,
     ):
         if total_failure == 0:
             return
@@ -126,10 +120,9 @@ class DeviceAdmin(admin.ModelAdmin):
         send_bulk_message methods.
         """
         total_failure = 0
-        single_responses: List[Tuple[SendResponse, str]] = []
+        single_responses = []
 
         for device in queryset:
-            device: "FCMDevice"
             if bulk:
                 response = queryset.send_message(
                     Message(
@@ -167,7 +160,7 @@ class DeviceAdmin(admin.ModelAdmin):
     send_bulk_message.short_description = _("Send test notification in bulk")
 
     def handle_topic_subscription(
-        self, request, queryset, should_subscribe: bool, bulk: bool = False
+        self, request, queryset, should_subscribe, bulk=False
     ):
         """
         Provides error handling for DeviceAdmin bulk_un/subscribe_to_topic and
@@ -177,9 +170,8 @@ class DeviceAdmin(admin.ModelAdmin):
         single_responses = []
 
         for device in queryset:
-            device: "FCMDevice"
             if bulk:
-                response: "FirebaseResponseDict" = queryset.handle_topic_subscription(
+                response = queryset.handle_topic_subscription(
                     should_subscribe,
                     "test-topic",
                 )
